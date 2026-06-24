@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import job from "./lib/cron.js";
 import clerkWebhooks from './webhooks/clerk.webhook.js'
+import authRoutes from './routes/auth.route.js'
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +27,8 @@ app.get("/health", (req, res) => {
     message: "Server is healthy",
   });
 });
+
+app.use('/api/auth', authRoutes)
 
 //// if the public directory exists send the static file
 if (fs.existsSync(publicDir)) {
