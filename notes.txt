@@ -2,3 +2,5 @@
 -parse the json data that is coming from the client side
 -app.use(cors({origin:FRONTEND_URL, credentials:true}))=> allow the client to send auth cookies and headers with the request
 - render becomes inactive after 15 mins so we send scheduled task everyy 14th min
+
+-signing secrets- mongodb has to ensure all the request comes from clerk
