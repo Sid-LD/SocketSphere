@@ -1,3 +1,4 @@
 -u make a link btw sender id and receiver id and then make a room with that link and then send the message to that room so that only those two can see the message
 -parse the json data that is coming from the client side
 -app.use(cors({origin:FRONTEND_URL, credentials:true}))=> allow the client to send auth cookies and headers with the request
+- render becomes inactive after 15 mins so we send scheduled task everyy 14th min
