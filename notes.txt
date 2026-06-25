@@ -4,3 +4,5 @@
 - render becomes inactive after 15 mins so we send scheduled task everyy 14th min
 
 -signing secrets- mongodb has to ensure all the request comes from clerk
+
+-when u want to listen to events use socket.on()

@@ -1,4 +1,5 @@
 import { hasImageKitConfig, uploadChatMedia } from "../lib/imagekit.js";
+import { getReceiverSocketId } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 
@@ -161,6 +162,12 @@ export async function sendMessage(req, res) {
     });
 
     await newMessage.save();
+
+    // before implementing real time updation we will always check whether the receiver is online or not
+
+    const receieverSocketId=getReceiverSocketId(receiverId);
+
+    io.to(receieverSocketId).emit("newMessage", newMessage)
 
     res.status(201).json({
       message: newMessage,
