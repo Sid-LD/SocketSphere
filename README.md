@@ -177,7 +177,7 @@ The frontend will start on `http://localhost:5173`.
 ## 👨‍💻 Author
 
 **Siddhant Roy**  
-B.Tech Computer Science (2nd Year)  
+B.Tech Electronics and Communication Engineering (3rd Year)  
 
 ---
 
