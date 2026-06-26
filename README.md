@@ -12,6 +12,7 @@ A modern, full-stack real-time chat application built with the MERN stack and We
 - 💬 **Persistent Conversation History** — All message threads are securely stored in MongoDB and loaded dynamically.
 - 🖼️ **Media Sharing** — Built-in support for sharing images and videos, uploaded and optimized via the ImageKit CDN.
 - 📱 **Responsive UI** — Fully responsive design that adapts flawlessly from desktop to mobile screens using an intuitive sidebar layout.
+- 🐳 **Docker Containerization** — Multi-stage Docker build pipeline for optimized, production-ready deployments.
 
 ---
 
@@ -92,6 +93,11 @@ sequenceDiagram
 | **ImageKit** | Media storage and Content Delivery Network (CDN) |
 | **Multer** | Middleware for handling `multipart/form-data` uploads |
 
+### DevOps & Deployment
+| Technology | Purpose |
+|---|---|
+| **Docker** | Containerization using multi-stage builds for optimized image sizes |
+
 ---
 
 ## 🛣️ API Routes & Endpoints
@@ -171,6 +177,7 @@ The frontend will start on `http://localhost:5173`.
 - **REST + WebSocket Hybrid Pattern** — Strategically using HTTP for heavy CRUD operations (fetching history) and WebSockets strictly for real-time push events.
 - **Auth Middleware Pattern** — Securing sensitive routes with Clerk's Express middleware, validating tokens before hitting controllers.
 - **Mongoose Aggregation Pipelines** — Utilizing advanced MongoDB operations (`$group`, `$lookup`, `$replaceRoot`, `$sort`) to build high-performance data queries for the conversations sidebar.
+- **Multi-Stage Docker Builds** — Architecting Dockerfiles to separate build environments from production runners, minimizing image size and improving security.
 
 ---
 
