@@ -7,11 +7,16 @@ const server=http.createServer(app);
 
 const allowedOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
 
-const io=new Server(server, {
-    cors:{
-        origin: allowedOrigin
-    }
-})
+const io = new Server(server, {
+  cors: {
+    // In development, allow any localhost port (Vite can pick 5173, 5174, etc.)
+    origin: process.env.NODE_ENV === "production"
+      ? allowedOrigin
+      : /^http:\/\/localhost:\d+$/,
+    credentials: true,
+  },
+});
+
 
 //userId, socketId map
 const userSocketMap={};

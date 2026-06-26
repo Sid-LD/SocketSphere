@@ -1,5 +1,5 @@
 import { hasImageKitConfig, uploadChatMedia } from "../lib/imagekit.js";
-import { getReceiverSocketId } from "../lib/socket.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
 
@@ -7,7 +7,8 @@ export async function getUserforSideBar(req, res) {
   try {
     const loggedInUser = req.user._id;
 
-    const everyoneExceptMe = User.find({ _id: { $ne: loggedInUser } }).select(
+    // ✅ Added `await` — without it, Mongoose returns a Promise object, not the data
+    const everyoneExceptMe = await User.find({ _id: { $ne: loggedInUser } }).select(
       "-clerkId",
     );
     res.status(200).json(everyoneExceptMe);
@@ -135,50 +136,45 @@ export async function sendMessage(req, res) {
   try {
     const senderId = req.user._id;
     const { id: receiverId } = req.params;
-    //text msg
     const { text } = req.body;
 
     let imageUrl;
     let videoUrl;
 
-    //sender has send an image or a video
+    // Handle optional file/media upload
     if (req.file) {
       if (!hasImageKitConfig) {
+        // ImageKit not configured — reject media upload requests
         return res.status(500).json({
-          message: "Media upload is not configured",
+          message: "Media upload is not configured on this server",
         });
-        const url = await uploadChatMedia(req.file);
-        //set img/ video url if exists
-        if (req.file.mimetype.startsWith("video/")) videoUrl = url;
-        else imageUrl = url;
       }
+      // ✅ Moved upload OUTSIDE the !hasImageKitConfig block so it actually runs
+      const url = await uploadChatMedia(req.file);
+      if (req.file.mimetype.startsWith("video/")) videoUrl = url;
+      else imageUrl = url;
     }
+
     const newMessage = new Message({
-      senderId: senderId,
-      receiverId: receiverId,
-      text: text,
+      senderId,
+      receiverId,
+      text,
       image: imageUrl,
       video: videoUrl,
     });
 
     await newMessage.save();
 
-    // before implementing real time updation we will always check whether the receiver is online or not
+    // Emit to the receiver's socket if they are online
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      // ✅ io is now imported from socket.js
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
 
-    const receieverSocketId=getReceiverSocketId(receiverId);
-
-    io.to(receieverSocketId).emit("newMessage", newMessage)
-
-    res.status(201).json({
-      message: newMessage,
-    });
+    res.status(201).json(newMessage);
   } catch (error) {
-
     console.error("Error while sending message: ", error.message);
-    res.status(500).json({
-        message:"Internal server error"
-    })
-    
-
+    res.status(500).json({ message: "Internal server error" });
   }
 }
