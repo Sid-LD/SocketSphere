@@ -21,25 +21,25 @@ SocketSphere utilizes a hybrid architecture, leveraging REST APIs for standard C
 
 ```mermaid
 graph TD
-    Client[React + Zustand Client]
+    Client["React and Zustand Client"]
     
-    subgraph Backend [Node.js Express Server]
-        REST[REST API Handlers]
-        Socket[Socket.io Server]
-        ClerkWebhooks[Clerk Webhooks]
+    subgraph Backend ["Node.js Express Server"]
+        REST["REST API Handlers"]
+        Socket["Socket.io Server"]
+        ClerkWebhooks["Clerk Webhooks"]
     end
 
-    subgraph External Services
-        Clerk[Clerk Auth Service]
-        ImageKit[ImageKit CDN]
-        Mongo[(MongoDB)]
+    subgraph ExternalServices ["External Services"]
+        Clerk["Clerk Auth Service"]
+        ImageKit["ImageKit CDN"]
+        Mongo["MongoDB Database"]
     end
 
-    Client -->|1. Authenticates| Clerk
-    Clerk -->|2. Returns Session| Client
+    Client -->|Authenticates| Clerk
+    Clerk -->|Returns Session| Client
     Client -->|HTTP GET/POST| REST
     Client <-->|WebSocket Events| Socket
-    Clerk -->|Webhook Syncs User Data| ClerkWebhooks
+    Clerk -->|Syncs User Data| ClerkWebhooks
     
     REST -->|Reads/Writes| Mongo
     REST -->|Uploads Media| ImageKit
@@ -51,20 +51,20 @@ graph TD
 ```mermaid
 sequenceDiagram
     participant UserA as User A Client
-    participant Server as Node.js + Socket.io
+    participant Server as Node.js Server
     participant UserB as User B Client
 
-    UserA->>Server: Connect (with userId)
+    UserA->>Server: Connect with userId
     Server-->>Server: Add to onlineUsers map
-    Server->>UserB: Emit "getOnlineUsers" (updates UI)
+    Server->>UserB: Emit getOnlineUsers
     
-    UserA->>Server: HTTP POST /api/messages/send (Message Data)
+    UserA->>Server: HTTP POST /api/messages/send
     Server-->>Server: Save to MongoDB
-    Server->>UserB: Emit "newMessage" (pushed to recipient)
+    Server->>UserB: Emit newMessage
     
     UserA->>Server: Disconnect
     Server-->>Server: Remove from onlineUsers map
-    Server->>UserB: Emit "getOnlineUsers" (updates UI)
+    Server->>UserB: Emit getOnlineUsers
 ```
 
 ---
