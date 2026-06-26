@@ -1,23 +1,71 @@
 # SocketSphere 💬
 
-A full-stack real-time chat application built with the MERN stack and WebSockets, featuring instant messaging, live online presence tracking, and secure user authentication.
-
----
-
-## 🚀 Live Demo
-
-> _Deploy link here (e.g. Render / Railway / Vercel)_
+A modern, full-stack real-time chat application built with the MERN stack and WebSockets. Designed to deliver instant messaging, live online presence tracking, and secure user authentication with a highly responsive user interface.
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Secure Authentication** — Sign up / sign in via Clerk (OAuth + email)
-- ⚡ **Real-Time Messaging** — Instant message delivery using Socket.io WebSockets (no page refresh needed)
-- 🟢 **Live Online Status** — See which users are currently online, updated in real time
-- 💬 **Conversation History** — All messages stored in MongoDB and loaded when you open a chat
-- 🖼️ **Media Sharing** — Send images and videos in chat, uploaded via ImageKit CDN
-- 📱 **Responsive UI** — Works on both desktop and mobile with an adaptive sidebar layout
+- 🔐 **Secure Authentication** — Enterprise-grade authentication powered by Clerk (OAuth + Email).
+- ⚡ **Real-Time Messaging** — Instant, bidirectional message delivery using Socket.io WebSockets (zero polling, zero page refreshes).
+- 🟢 **Live Online Status** — Real-time tracking of user presence, instantly broadcasting when users come online or go offline.
+- 💬 **Persistent Conversation History** — All message threads are securely stored in MongoDB and loaded dynamically.
+- 🖼️ **Media Sharing** — Built-in support for sharing images and videos, uploaded and optimized via the ImageKit CDN.
+- 📱 **Responsive UI** — Fully responsive design that adapts flawlessly from desktop to mobile screens using an intuitive sidebar layout.
+
+---
+
+## 🏗️ System Architecture
+
+SocketSphere utilizes a hybrid architecture, leveraging REST APIs for standard CRUD operations and WebSockets strictly for low-latency, real-time push events.
+
+```mermaid
+graph TD
+    Client[React + Zustand Client]
+    
+    subgraph Backend [Node.js Express Server]
+        REST[REST API Handlers]
+        Socket[Socket.io Server]
+        ClerkWebhooks[Clerk Webhooks]
+    end
+
+    subgraph External Services
+        Clerk[Clerk Auth Service]
+        ImageKit[ImageKit CDN]
+        Mongo[(MongoDB)]
+    end
+
+    Client -->|1. Authenticates| Clerk
+    Clerk -->|2. Returns Session| Client
+    Client -->|HTTP GET/POST| REST
+    Client <-->|WebSocket Events| Socket
+    Clerk -->|Webhook Syncs User Data| ClerkWebhooks
+    
+    REST -->|Reads/Writes| Mongo
+    REST -->|Uploads Media| ImageKit
+    Socket -->|Tracks Presence| Mongo
+```
+
+### 📡 Real-Time Event Flow (Socket.io)
+
+```mermaid
+sequenceDiagram
+    participant UserA as User A Client
+    participant Server as Node.js + Socket.io
+    participant UserB as User B Client
+
+    UserA->>Server: Connect (with userId)
+    Server-->>Server: Add to onlineUsers map
+    Server->>UserB: Emit "getOnlineUsers" (updates UI)
+    
+    UserA->>Server: HTTP POST /api/messages/send (Message Data)
+    Server-->>Server: Save to MongoDB
+    Server->>UserB: Emit "newMessage" (pushed to recipient)
+    
+    UserA->>Server: Disconnect
+    Server-->>Server: Remove from onlineUsers map
+    Server->>UserB: Emit "getOnlineUsers" (updates UI)
+```
 
 ---
 
@@ -26,129 +74,113 @@ A full-stack real-time chat application built with the MERN stack and WebSockets
 ### Frontend
 | Technology | Purpose |
 |---|---|
-| **React 19** | UI component library |
-| **Vite** | Fast dev server & build tool |
-| **Tailwind CSS v4** | Utility-first styling |
-| **HeroUI** | Pre-built accessible UI components |
-| **Zustand** | Lightweight global state management |
-| **Clerk** | Authentication (sign in, sign up, session) |
-| **Socket.io Client** | Real-time WebSocket connection |
-| **Axios** | HTTP API requests |
+| **React 19** | Core UI component library |
+| **Vite** | Blazing fast dev server and bundler |
+| **Tailwind CSS v4** | Utility-first styling framework |
+| **Zustand** | Lightweight, boilerplate-free global state management |
+| **Clerk React** | Client-side session and authentication management |
+| **Socket.io-Client** | Persistent WebSocket connection |
+| **Axios** | Handling HTTP REST API requests |
 
 ### Backend
 | Technology | Purpose |
 |---|---|
-| **Node.js + Express** | REST API server |
-| **Socket.io** | WebSocket server for real-time events |
-| **MongoDB + Mongoose** | NoSQL database & data modelling |
-| **Clerk SDK (Express)** | Server-side auth middleware |
-| **ImageKit** | Media storage and CDN for images/videos |
-| **Multer** | File upload middleware |
+| **Node.js + Express** | Robust REST API server framework |
+| **Socket.io** | WebSocket server for real-time, bidirectional events |
+| **MongoDB + Mongoose** | NoSQL database with strict schema modeling |
+| **Clerk SDK** | Server-side authentication and route protection |
+| **ImageKit** | Media storage and Content Delivery Network (CDN) |
+| **Multer** | Middleware for handling `multipart/form-data` uploads |
 
 ---
 
-## 🏗️ Architecture Overview
+## 🛣️ API Routes & Endpoints
 
-```
-Client (React + Zustand)
-    │
-    ├── REST API (Axios) ──────► Express Server ──► MongoDB
-    │                                  │
-    └── WebSocket (Socket.io) ◄────────┘
-```
+SocketSphere's backend is structured to cleanly separate authentication, messaging, and webhooks.
 
-- The **frontend** makes HTTP calls (via Axios) for fetching users, conversations, and message history.
-- **New messages** are delivered instantly using a persistent Socket.io WebSocket connection — no polling.
-- **Online presence** is tracked server-side using a `userId → socketId` map and broadcast to all connected clients.
+### Authentication (`/api/auth`)
+| Route | Method | Description |
+|---|---|---|
+| `/check` | `GET` | Validates the current user's session token and returns their synced profile data from MongoDB. Protected by Clerk middleware. |
 
----
+### Messaging (`/api/messages`)
+| Route | Method | Description |
+|---|---|---|
+| `/users` | `GET` | Retrieves all registered users in the system to populate the "New Chat" or "People" tab. |
+| `/conversations` | `GET` | Fetches a list of users the current user has already exchanged messages with, including a preview of the last message sent. Uses a MongoDB aggregation pipeline. |
+| `/:id` | `GET` | Fetches the complete message history between the authenticated user and the specified user `id`. |
+| `/send/:id` | `POST` | Sends a new text or media message to the specified `id`. Handles file uploads via Multer and ImageKit, saves to MongoDB, and triggers a Socket.io push event. |
 
-## 📁 Project Structure
-
-```
-├── backend/
-│   └── src/
-│       ├── controllers/     # Request handlers (auth, messages)
-│       ├── middlewares/     # Auth guard, file upload
-│       ├── models/          # Mongoose schemas (User, Message)
-│       ├── routes/          # Express route definitions
-│       ├── lib/             # DB connection, Socket.io setup
-│       └── webhooks/        # Clerk user sync webhook
-└── frontend/
-    └── src/
-        ├── components/      # Reusable UI components
-        │   ├── auth/        # Auth page components
-        │   └── chat/        # Chat UI components
-        ├── pages/           # ChatPage, AuthPage
-        ├── store/           # Zustand stores (auth, chat)
-        ├── hooks/           # Custom React hooks
-        └── lib/             # Axios instance, utilities
-```
+### Webhooks (`/api/webhooks`)
+| Route | Method | Description |
+|---|---|---|
+| `/clerk` | `POST` | Listens for user creation/update/deletion events from Clerk and securely syncs this data into the local MongoDB instance. |
 
 ---
 
 ## ⚙️ Getting Started
 
 ### Prerequisites
-- Node.js v18+
-- MongoDB (local or Atlas)
-- Clerk account (free)
+- Node.js (v18+)
+- MongoDB connection string (Local or Atlas)
+- Clerk account (for authentication)
+- ImageKit account (for media uploads)
 
-### 1. Clone the repo
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/socketsphere.git
+git clone https://github.com/SiddhantRoy/socketsphere.git
 cd socketsphere
 ```
 
-### 2. Setup Backend
+### 2. Setup Backend Environment
 ```bash
 cd backend
 npm install
 ```
-
-Create a `.env` file in `/backend`:
+Create a `.env` file in the `/backend` directory:
 ```env
 PORT=3000
-MONGODB_URI=your_mongodb_uri
-CLERK_SECRET_KEY=your_clerk_secret
+MONGODB_URI=your_mongodb_connection_string
+CLERK_SECRET_KEY=your_clerk_secret_key
 CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 FRONTEND_URL=http://localhost:5173
 IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
 IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
-IMAGEKIT_URL_ENDPOINT=your_imagekit_url
+IMAGEKIT_URL_ENDPOINT=your_imagekit_url_endpoint
+CLERK_WEBHOOK_SIGNING_SECRET=your_clerk_webhook_secret
+```
+Run the server:
+```bash
+npm run dev
 ```
 
+### 3. Setup Frontend Environment
 ```bash
-npm run dev    # starts on http://localhost:3000
-```
-
-### 3. Setup Frontend
-```bash
-cd frontend
+cd ../frontend
 npm install
-npm run dev   # starts on http://localhost:5173
+npm run dev
 ```
+The frontend will start on `http://localhost:5173`.
 
 ---
 
 ## 🔑 Key Concepts Demonstrated
 
-- **WebSocket event lifecycle** — connection, message emit, room management, disconnection cleanup
-- **Zustand state management** — global stores without Redux boilerplate
-- **REST + WebSocket hybrid** — HTTP for CRUD, sockets only for real-time push
-- **Auth middleware pattern** — protecting routes with Clerk on both client and server
-- **Mongoose aggregation pipeline** — used to build the conversations sidebar with `$group`, `$lookup`, `$replaceRoot`
+- **WebSocket Event Lifecycle** — Managing connections, message emissions, room targeting, and disconnection cleanup without memory leaks.
+- **Zustand State Management** — Architecting robust global stores for messages and user states without the heavy boilerplate of Redux.
+- **REST + WebSocket Hybrid Pattern** — Strategically using HTTP for heavy CRUD operations (fetching history) and WebSockets strictly for real-time push events.
+- **Auth Middleware Pattern** — Securing sensitive routes with Clerk's Express middleware, validating tokens before hitting controllers.
+- **Mongoose Aggregation Pipelines** — Utilizing advanced MongoDB operations (`$group`, `$lookup`, `$replaceRoot`, `$sort`) to build high-performance data queries for the conversations sidebar.
 
 ---
 
 ## 👨‍💻 Author
 
-**Your Name**  
-B.Tech Computer Science · 2nd Year  
-[GitHub](https://github.com/your-username) · [LinkedIn](https://linkedin.com/in/your-profile)
+**Siddhant Roy**  
+B.Tech Computer Science (2nd Year)  
 
 ---
 
 ## 📄 License
 
-MIT License — feel free to use this project for learning purposes.
+This project is licensed under the MIT License - feel free to use it for learning purposes.
