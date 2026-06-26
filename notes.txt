@@ -8,3 +8,12 @@
 -when u want to listen to events use socket.on()
 
 npm i react-router
+npm i axios socket.io-client
+npm install react-hot-toast
+
+#Zustand
+->used in state management
+->suppose we have a state in parent component we need to passs the state in the child component we need to prop drill all the component(go sequentially from one component to the next
+. with zustand u create a gloval central container where u keep all ur func n methods and any component can access that global container)
+
+Zustand stores state centrally and notifies only the components that subscribe to the changed value
