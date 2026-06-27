@@ -1,73 +1,98 @@
+<div align="center">
+
 # SocketSphere 💬
 
-A modern, full-stack real-time chat application built with the MERN stack and WebSockets. Designed to deliver instant messaging, live online presence tracking, and secure user authentication with a highly responsive user interface.
+**A production-grade, full-stack real-time chat application**
 
-**Live Demo:** [https://socketsphere-bve8.onrender.com](https://socketsphere-bve8.onrender.com)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react)](https://react.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=flat-square&logo=node.js)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?style=flat-square&logo=mongodb)](https://mongodb.com)
+[![Socket.io](https://img.shields.io/badge/Socket.io-4.x-010101?style=flat-square&logo=socket.io)](https://socket.io)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Stage-2496ED?style=flat-square&logo=docker)](https://docker.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
+
+Built with the MERN stack and WebSockets. Delivers instant messaging, live presence tracking, AI-powered smart replies, and secure authentication — all in a fully responsive interface.
+
+**[🚀 Live Demo →](https://socketsphere-bve8.onrender.com)**
+
+</div>
 
 ---
 
 ## ✨ Features
 
-- 🔐 **Secure Authentication** — Enterprise-grade authentication powered by Clerk (OAuth + Email).
-- ⚡ **Real-Time Messaging** — Instant, bidirectional message delivery using Socket.io WebSockets (zero polling, zero page refreshes).
-- 🟢 **Live Online Status** — Real-time tracking of user presence, instantly broadcasting when users come online or go offline.
-- 💬 **Persistent Conversation History** — All message threads are securely stored in MongoDB and loaded dynamically.
-- 🖼️ **Media Sharing** — Built-in support for sharing images and videos, uploaded and optimized via the ImageKit CDN.
-- 📱 **Responsive UI** — Fully responsive design that adapts flawlessly from desktop to mobile screens using an intuitive sidebar layout.
-- 🐳 **Docker Containerization** — Multi-stage Docker build pipeline for optimized, production-ready deployments.
+| Feature | Description |
+|---|---|
+| 🔐 **Secure Authentication** | Enterprise-grade auth via Clerk — supports OAuth (Google, GitHub) and Email/Password |
+| ⚡ **Real-Time Messaging** | Instant bidirectional message delivery over Socket.io WebSockets (zero polling) |
+| 🤖 **AI Smart Replies** | Gemini-powered reply suggestions that appear contextually after every received message |
+| 🟢 **Live Online Presence** | Real-time online/offline status tracking broadcast to all connected clients |
+| 💬 **Persistent History** | All conversations stored in MongoDB and loaded dynamically on conversation open |
+| 🖼️ **Media Sharing** | In-chat image and video sharing, uploaded and optimized through ImageKit CDN |
+| 📱 **Fully Responsive** | Adaptive layout that works seamlessly from mobile to widescreen desktop |
+| 🐳 **Docker Ready** | Multi-stage Docker build pipeline for optimized, production-ready container deployments |
 
 ---
 
 ## 🏗️ System Architecture
 
-SocketSphere utilizes a hybrid architecture, leveraging REST APIs for standard CRUD operations and WebSockets strictly for low-latency, real-time push events.
+SocketSphere uses a **hybrid architecture** — REST APIs for standard CRUD operations, and WebSockets exclusively for low-latency real-time push events. The Gemini API is integrated server-side to keep the API key secure.
 
 ```mermaid
 graph TD
-    Client["React and Zustand Client"]
-    
-    subgraph Backend ["Node.js Express Server"]
+    Client["React + Zustand Client"]
+
+    subgraph Backend ["Node.js / Express Server"]
         REST["REST API Handlers"]
         Socket["Socket.io Server"]
-        ClerkWebhooks["Clerk Webhooks"]
+        Webhooks["Clerk Webhooks"]
+        Gemini["Gemini AI Controller"]
     end
 
-    subgraph ExternalServices ["External Services"]
-        Clerk["Clerk Auth Service"]
+    subgraph External ["External Services"]
+        ClerkSvc["Clerk Auth"]
         ImageKit["ImageKit CDN"]
-        Mongo["MongoDB Database"]
+        Mongo["MongoDB Atlas"]
+        GeminiAPI["Google Gemini API"]
     end
 
-    Client -->|Authenticates| Clerk
-    Clerk -->|Returns Session| Client
-    Client -->|HTTP GET/POST| REST
+    Client -->|Authenticates| ClerkSvc
+    ClerkSvc -->|Session Token| Client
+    Client -->|HTTP REST| REST
     Client <-->|WebSocket Events| Socket
-    Clerk -->|Syncs User Data| ClerkWebhooks
-    
-    REST -->|Reads/Writes| Mongo
+    ClerkSvc -->|User Sync| Webhooks
+
+    REST -->|Reads / Writes| Mongo
     REST -->|Uploads Media| ImageKit
     Socket -->|Tracks Presence| Mongo
+    Gemini -->|Generate Replies| GeminiAPI
+    Client -->|POST /suggest| Gemini
 ```
 
-### 📡 Real-Time Event Flow (Socket.io)
+### 📡 Real-Time Event Flow
 
 ```mermaid
 sequenceDiagram
-    participant UserA as User A Client
-    participant Server as Node.js Server
-    participant UserB as User B Client
+    participant A as User A (Client)
+    participant S as Node.js Server
+    participant B as User B (Client)
 
-    UserA->>Server: Connect with userId
-    Server-->>Server: Add to onlineUsers map
-    Server->>UserB: Emit getOnlineUsers
-    
-    UserA->>Server: HTTP POST /api/messages/send
-    Server-->>Server: Save to MongoDB
-    Server->>UserB: Emit newMessage
-    
-    UserA->>Server: Disconnect
-    Server-->>Server: Remove from onlineUsers map
-    Server->>UserB: Emit getOnlineUsers
+    A->>S: Connect (userId)
+    S-->>S: Register in onlineUsers map
+    S->>B: emit getOnlineUsers
+
+    A->>S: POST /api/messages/send/:id
+    S-->>S: Save to MongoDB
+    S->>B: emit newMessage
+
+    Note over A,S: User A receives a message from B
+    A->>S: POST /api/messages/suggest
+    S-->>S: Call Gemini API with chat context
+    S->>A: { suggestions: ["...", "...", "..."] }
+
+    A->>S: Disconnect
+    S-->>S: Remove from onlineUsers map
+    S->>B: emit getOnlineUsers
 ```
 
 ---
@@ -75,121 +100,181 @@ sequenceDiagram
 ## 🛠️ Tech Stack
 
 ### Frontend
-| Technology | Purpose |
-|---|---|
-| **React 19** | Core UI component library |
-| **Vite** | Blazing fast dev server and bundler |
-| **Tailwind CSS v4** | Utility-first styling framework |
-| **Zustand** | Lightweight, boilerplate-free global state management |
-| **Clerk React** | Client-side session and authentication management |
-| **Socket.io-Client** | Persistent WebSocket connection |
-| **Axios** | Handling HTTP REST API requests |
+| Technology | Version | Purpose |
+|---|---|---|
+| **React** | 19 | Core UI component library |
+| **Vite** | 8 | Blazing-fast dev server & bundler |
+| **Tailwind CSS** | v4 | Utility-first styling framework |
+| **Zustand** | 5 | Lightweight global state management |
+| **Clerk React** | 6 | Client-side session & auth UI |
+| **Socket.io-Client** | 4 | Persistent WebSocket connection |
+| **Axios** | 1 | HTTP REST API client |
+| **Lucide React** | latest | Icon library |
 
 ### Backend
-| Technology | Purpose |
-|---|---|
-| **Node.js + Express** | Robust REST API server framework |
-| **Socket.io** | WebSocket server for real-time, bidirectional events |
-| **MongoDB + Mongoose** | NoSQL database with strict schema modeling |
-| **Clerk SDK** | Server-side authentication and route protection |
-| **ImageKit** | Media storage and Content Delivery Network (CDN) |
-| **Multer** | Middleware for handling `multipart/form-data` uploads |
+| Technology | Version | Purpose |
+|---|---|---|
+| **Node.js + Express** | 22 / 5 | REST API server |
+| **Socket.io** | 4 | Real-time bidirectional event engine |
+| **MongoDB + Mongoose** | Atlas / 9 | NoSQL database with schema modeling |
+| **Clerk SDK** | 2 | Server-side auth middleware & webhook handling |
+| **ImageKit** | 7 | Media storage & CDN delivery |
+| **Multer** | 2 | Multipart form-data file upload middleware |
+| **@google/genai** | latest | Gemini AI SDK for smart reply generation |
 
 ### DevOps & Deployment
 | Technology | Purpose |
 |---|---|
-| **Docker** | Containerization using multi-stage builds for optimized image sizes |
+| **Docker** | Multi-stage builds — separates build env from production runner |
+| **Render** | Cloud hosting for the containerized application |
 
 ---
 
-## 🛣️ API Routes & Endpoints
+## 🤖 AI Smart Reply — How It Works
 
-SocketSphere's backend is structured to cleanly separate authentication, messaging, and webhooks.
+When the other person sends a message, SocketSphere automatically fetches 3 short, contextual reply suggestions powered by the **Gemini API**.
 
-### Authentication (`/api/auth`)
-| Route | Method | Description |
+```
+┌─────────────────────────────────────────────────────┐
+│  Them: "did you watch Interstellar?"                │
+│                                                     │
+│  ✨  Not yet!    Yes, it's great!    It's amazing!  │ ← click to fill composer
+│  ┌─────────────────────────────────────────────┐   │
+│  │  Message...                             [→] │   │
+│  └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+**Flow:**
+1. Receiver gets a new message → `SmartReplies` component detects it's the other person's turn
+2. Frontend sends the last 10 text messages to `POST /api/messages/suggest`
+3. Backend builds a conversation transcript and calls Gemini with a structured prompt
+4. Gemini returns a JSON array of 3 short replies → displayed as clickable chips
+5. Clicking a chip fills the composer — user can edit or send directly
+
+---
+
+## 🛣️ API Reference
+
+### Authentication — `/api/auth`
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| `GET` | `/check` | ✅ Required | Validates session token, returns synced MongoDB user profile |
+
+### Messaging — `/api/messages`
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| `GET` | `/users` | ✅ Required | All users in the system (for "New Chat" / People tab) |
+| `GET` | `/conversations` | ✅ Required | Conversations list with last-message preview (MongoDB aggregation pipeline) |
+| `GET` | `/:id` | ✅ Required | Full message history between the current user and `:id` |
+| `POST` | `/send/:id` | ✅ Required | Send a text or media message; handles Multer upload → ImageKit → MongoDB → Socket.io emit |
+| `POST` | `/suggest` | ✅ Required | Generate 3 AI smart reply suggestions via Gemini API |
+
+### Webhooks — `/api/webhooks`
+| Method | Route | Description |
 |---|---|---|
-| `/check` | `GET` | Validates the current user's session token and returns their synced profile data from MongoDB. Protected by Clerk middleware. |
-
-### Messaging (`/api/messages`)
-| Route | Method | Description |
-|---|---|---|
-| `/users` | `GET` | Retrieves all registered users in the system to populate the "New Chat" or "People" tab. |
-| `/conversations` | `GET` | Fetches a list of users the current user has already exchanged messages with, including a preview of the last message sent. Uses a MongoDB aggregation pipeline. |
-| `/:id` | `GET` | Fetches the complete message history between the authenticated user and the specified user `id`. |
-| `/send/:id` | `POST` | Sends a new text or media message to the specified `id`. Handles file uploads via Multer and ImageKit, saves to MongoDB, and triggers a Socket.io push event. |
-
-### Webhooks (`/api/webhooks`)
-| Route | Method | Description |
-|---|---|---|
-| `/clerk` | `POST` | Listens for user creation/update/deletion events from Clerk and securely syncs this data into the local MongoDB instance. |
+| `POST` | `/clerk` | Clerk event listener — syncs user create/update/delete events into MongoDB |
 
 ---
 
 ## ⚙️ Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- MongoDB connection string (Local or Atlas)
-- Clerk account (for authentication)
-- ImageKit account (for media uploads)
+
+- Node.js `v18+`
+- MongoDB connection string (local or Atlas)
+- [Clerk](https://clerk.com) account — for authentication
+- [ImageKit](https://imagekit.io) account — for media storage
+- [Google AI Studio](https://aistudio.google.com) API key — for smart replies
 
 ### 1. Clone the Repository
+
 ```bash
-git clone https://github.com/SiddhantRoy/socketsphere.git
-cd socketsphere
+git clone https://github.com/Sid-LD/SocketSphere.git
+cd SocketSphere
 ```
 
-### 2. Setup Backend Environment
+### 2. Backend Setup
+
 ```bash
 cd backend
 npm install
 ```
+
 Create a `.env` file in the `/backend` directory:
+
 ```env
 PORT=3000
 MONGODB_URI=your_mongodb_connection_string
+
 CLERK_SECRET_KEY=your_clerk_secret_key
 CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-FRONTEND_URL=http://localhost:5173
+CLERK_WEBHOOK_SIGNING_SECRET=your_clerk_webhook_secret
+
 IMAGEKIT_PUBLIC_KEY=your_imagekit_public_key
 IMAGEKIT_PRIVATE_KEY=your_imagekit_private_key
 IMAGEKIT_URL_ENDPOINT=your_imagekit_url_endpoint
-CLERK_WEBHOOK_SIGNING_SECRET=your_clerk_webhook_secret
-```
-Run the server:
-```bash
-npm run dev
+
+GEMINI_API_KEY=your_google_ai_studio_api_key
+
+FRONTEND_URL=http://localhost:5173
+NODE_ENV=development
 ```
 
-### 3. Setup Frontend Environment
+Start the backend:
+
+```bash
+npm run dev   # starts on http://localhost:3000
+```
+
+### 3. Frontend Setup
+
 ```bash
 cd ../frontend
 npm install
-npm run dev
+npm run dev   # starts on http://localhost:5173
 ```
-The frontend will start on `http://localhost:5173`.
+
+### 4. Docker (Production)
+
+```bash
+# From the project root
+docker build \
+  --build-arg VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key \
+  -t socketsphere .
+
+docker run -p 3001:3001 \
+  -e MONGODB_URI=... \
+  -e CLERK_SECRET_KEY=... \
+  -e GEMINI_API_KEY=... \
+  socketsphere
+```
 
 ---
 
-## 🔑 Key Concepts Demonstrated
+## 🔑 Key Engineering Concepts
 
-- **WebSocket Event Lifecycle** — Managing connections, message emissions, room targeting, and disconnection cleanup without memory leaks.
-- **Zustand State Management** — Architecting robust global stores for messages and user states without the heavy boilerplate of Redux.
-- **REST + WebSocket Hybrid Pattern** — Strategically using HTTP for heavy CRUD operations (fetching history) and WebSockets strictly for real-time push events.
-- **Auth Middleware Pattern** — Securing sensitive routes with Clerk's Express middleware, validating tokens before hitting controllers.
-- **Mongoose Aggregation Pipelines** — Utilizing advanced MongoDB operations (`$group`, `$lookup`, `$replaceRoot`, `$sort`) to build high-performance data queries for the conversations sidebar.
-- **Multi-Stage Docker Builds** — Architecting Dockerfiles to separate build environments from production runners, minimizing image size and improving security.
+| Concept | Implementation |
+|---|---|
+| **WebSocket Lifecycle** | Connections, emissions, room targeting, and disconnection cleanup — zero listener leaks via `socket.off()` before every `socket.on()` |
+| **REST + WebSocket Hybrid** | HTTP for heavy CRUD (fetch history), WebSockets only for real-time push — minimizes unnecessary socket traffic |
+| **Zustand State Architecture** | Single `useChatStore` as the source of truth for messages, conversations, composer state, and media upload flags |
+| **Auth Middleware** | Clerk Express middleware validates JWT on every protected route before the controller runs |
+| **MongoDB Aggregation** | `$group → $sort → $lookup → $replaceRoot → $project` pipeline powers the conversations sidebar with last-message previews |
+| **Multi-Stage Docker Build** | Stage 1: Vite SPA build → Stage 2: Express bundle → Stage 3: Production runner (no dev dependencies, minimal image size) |
+| **AI Integration** | Gemini API called server-side (keeps API key secure); conversation context windowed to last 10 messages for efficiency |
 
 ---
 
 ## 👨‍💻 Author
 
-**Siddhant Roy**  
-B.Tech Electronics and Communication Engineering (3rd Year)  
+**Siddhant Roy**
+B.Tech Electronics and Communication Engineering — 3rd Year
+
+[![GitHub](https://img.shields.io/badge/GitHub-Sid--LD-181717?style=flat-square&logo=github)](https://github.com/Sid-LD)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License - feel free to use it for learning purposes.
+This project is licensed under the **MIT License** — feel free to use it for learning and personal projects.

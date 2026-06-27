@@ -212,7 +212,7 @@ Reply with ONLY a JSON array like: ["reply1", "reply2", "reply3"]`;
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const result = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 

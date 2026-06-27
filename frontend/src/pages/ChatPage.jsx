@@ -78,7 +78,10 @@ function ChatPage() {
               />
 
               {/* Text input + send */}
-              <ChatComposer conversationId={activeConversationId} />
+              <ChatComposer
+                conversationId={activeConversationId}
+                messages={activeConversation.messages}
+              />
             </>
           ) : (
             <EmptyState />

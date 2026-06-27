@@ -11,13 +11,12 @@ import SmartReplies from "./SmartReplies";
 // - isSendingMedia flag: disables controls while upload is in progress
 // - SmartReplies: AI suggestions shown when the last message is from the other person
 
-export default function ChatComposer({ conversationId }) {
+export default function ChatComposer({ conversationId, messages }) {
   const composerText = useChatStore((state) => state.composerText);
   const setComposerText = useChatStore((state) => state.setComposerText);
   const sendTextMessage = useChatStore((state) => state.sendTextMessage);
   const sendMediaMessage = useChatStore((state) => state.sendMediaMessage);
   const isSendingMedia = useChatStore((state) => state.isSendingMedia);
-  const messages = useChatStore((state) => state.messages);
 
   const fileInputRef = useRef(null);
 
