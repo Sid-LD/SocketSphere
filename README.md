@@ -2,6 +2,8 @@
 
 A modern, full-stack real-time chat application built with the MERN stack and WebSockets. Designed to deliver instant messaging, live online presence tracking, and secure user authentication with a highly responsive user interface.
 
+**Live Demo:** [https://socketsphere-bve8.onrender.com](https://socketsphere-bve8.onrender.com)
+
 ---
 
 ## ✨ Features
