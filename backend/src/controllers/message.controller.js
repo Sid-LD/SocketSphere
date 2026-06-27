@@ -2,6 +2,7 @@ import { hasImageKitConfig, uploadChatMedia } from "../lib/imagekit.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
 import Message from "../models/message.model.js";
 import User from "../models/user.model.js";
+import { GoogleGenAI } from "@google/genai";
 
 export async function getUserforSideBar(req, res) {
   try {
@@ -176,5 +177,57 @@ export async function sendMessage(req, res) {
   } catch (error) {
     console.error("Error while sending message: ", error.message);
     res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+// ─── AI Smart Reply Suggestions ──────────────────────────────────────────────
+// POST /api/messages/suggest
+// Body: { messages: [{ role: "me"|"them", text: string }] }
+// Returns: { suggestions: [string, string, string] }
+export async function getSmartReplies(req, res) {
+  try {
+    const { messages } = req.body;
+
+    if (!messages || messages.length === 0) {
+      return res.status(400).json({ message: "No messages provided" });
+    }
+
+    // Build a readable conversation transcript for Gemini
+    const transcript = messages
+      .slice(-10) // only use last 10 messages for context
+      .map((m) => `${m.role === "me" ? "Me" : "Them"}: ${m.text}`)
+      .join("\n");
+
+    const prompt = `You are a smart reply assistant for a chat app. 
+Based on the conversation below, suggest exactly 3 short, natural reply options that "Me" could send next.
+Rules:
+- Each reply must be SHORT (under 10 words)
+- Replies should be conversational and friendly
+- Return ONLY a JSON array of 3 strings, no extra text
+
+Conversation:
+${transcript}
+
+Reply with ONLY a JSON array like: ["reply1", "reply2", "reply3"]`;
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const result = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: prompt,
+    });
+
+    const raw = result.text.trim();
+
+    // Strip markdown code fences if Gemini wraps the JSON in ```json ... ```
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
+    const suggestions = JSON.parse(cleaned);
+
+    if (!Array.isArray(suggestions)) throw new Error("Unexpected response format");
+
+    res.status(200).json({ suggestions: suggestions.slice(0, 3) });
+  } catch (error) {
+    console.error("Error in getSmartReplies:", error.message);
+    res.status(500).json({ message: "Failed to generate suggestions" });
   }
 }

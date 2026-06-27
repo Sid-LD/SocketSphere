@@ -4,6 +4,7 @@ import { protectRoute } from '../middlewares/auth.middleware.js';
 import { getConversationsForSidebar } from "../controllers/message.controller.js";
 import { getMessages } from '../controllers/message.controller.js';
 import { sendMessage } from '../controllers/message.controller.js';
+import { getSmartReplies } from '../controllers/message.controller.js';
 import { upload } from '../middlewares/upload.middleware.js';
 
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.get('/users', protectRoute, getUserforSideBar)
 router.get("/conversations", protectRoute, getConversationsForSidebar);
+router.post('/suggest', protectRoute, getSmartReplies);  // AI smart replies — must be before /:id
 router.get('/:id', protectRoute, getMessages);
 router.post('/send/:id', protectRoute,upload.single('media'), sendMessage)
 // in the frontend we will keep the id name as media

@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { SendHorizontal, ImagePlus, Loader2 } from "lucide-react";
 import { useChatStore } from "../../store/useChatStore";
+import SmartReplies from "./SmartReplies";
 
 // ─── ChatComposer ─────────────────────────────────────────────────────────────
 // The message input bar at the bottom of the chat panel.
@@ -8,6 +9,7 @@ import { useChatStore } from "../../store/useChatStore";
 // - Send button: calls sendTextMessage on click or Enter key
 // - Image/file upload button: calls sendMediaMessage
 // - isSendingMedia flag: disables controls while upload is in progress
+// - SmartReplies: AI suggestions shown when the last message is from the other person
 
 export default function ChatComposer({ conversationId }) {
   const composerText = useChatStore((state) => state.composerText);
@@ -15,6 +17,7 @@ export default function ChatComposer({ conversationId }) {
   const sendTextMessage = useChatStore((state) => state.sendTextMessage);
   const sendMediaMessage = useChatStore((state) => state.sendMediaMessage);
   const isSendingMedia = useChatStore((state) => state.isSendingMedia);
+  const messages = useChatStore((state) => state.messages);
 
   const fileInputRef = useRef(null);
 
@@ -38,8 +41,11 @@ export default function ChatComposer({ conversationId }) {
   const canSend = composerText.trim().length > 0 && !isSendingMedia;
 
   return (
-    <div className="shrink-0 border-t border-border bg-background px-3 py-3">
-      <div className="flex items-end gap-2 rounded-2xl border border-border bg-foreground/3 px-3 py-2">
+    <div className="shrink-0 border-t border-border bg-background">
+      {/* AI Smart Reply chips */}
+      <SmartReplies messages={messages} onSelectReply={setComposerText} />
+
+      <div className="flex items-end gap-2 rounded-2xl border border-border bg-foreground/3 mx-3 mb-3 px-3 py-2">
         {/* Hidden file input triggered by the image button */}
         <input
           ref={fileInputRef}
@@ -93,3 +99,4 @@ export default function ChatComposer({ conversationId }) {
     </div>
   );
 }
+
